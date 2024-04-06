@@ -1,6 +1,7 @@
 package com.khue.customgridview
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -8,8 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,7 +35,7 @@ class MainActivity : ComponentActivity() {
                     Box {
                         VerticalGrid(
                             modifier = Modifier.padding(8.dp),
-                            column = 2,
+                            columns = 2,
                             horizontalSpacing = 5.dp,
                             verticalSpacing = 5.dp
                         ) {
@@ -64,7 +63,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun VerticalGrid(
     modifier: Modifier = Modifier,
-    column: Int = 2,
+    columns: Int = 2,
     horizontalSpacing: Dp = 0.dp,
     verticalSpacing: Dp = 0.dp,
     content: @Composable () -> Unit
@@ -74,8 +73,8 @@ fun VerticalGrid(
         content = content
     ) { measurables, constraints ->
         val horizontalSpacingPx = horizontalSpacing.roundToPx()
-        val totalHorizontalSpace = (column - 1) * horizontalSpacingPx
-        val itemWidth = (constraints.maxWidth - totalHorizontalSpace) / column
+        val totalHorizontalSpace = (columns - 1) * horizontalSpacingPx
+        val itemWidth = (constraints.maxWidth - totalHorizontalSpace) / columns
         val itemConstraints = constraints.copy(
             minWidth = itemWidth,
             maxWidth = itemWidth
@@ -85,7 +84,8 @@ fun VerticalGrid(
         val gridHeights = mutableMapOf<Int, Int>()
 
         placeables.forEachIndexed { index, placeable ->
-            val currentGrid = index / column
+            val currentGrid = index / columns
+            Log.d("VerticalGrid", "currentGrid: $currentGrid")
             val currentGridHeight = gridHeights[currentGrid] ?: 0
             if (placeable.height >= currentGridHeight) gridHeights[currentGrid] = placeable.height
         }
@@ -95,20 +95,15 @@ fun VerticalGrid(
         val height = gridHeights.values.sumOf { it } + totalVerticalSpace
 
         layout(width, height) {
-            var x = 0
-            var y = 0
-            var row = 1
             val itemWidthWithHorizontalSpacing = itemWidth + horizontalSpacingPx
+            val columnY = Array(columns) { 0 }
             placeables.forEachIndexed { index, placeable ->
-                placeable.placeRelative(x = x, y = y)
-                val lastCellOfColumn = index % column == (column - 1)
-                if (!lastCellOfColumn) {
-                    if (row % 2 == 1) x += itemWidthWithHorizontalSpacing else x -= itemWidthWithHorizontalSpacing
-                } else {
-                    x = if (row % 2 == 1) x else 0
-                    y += (gridHeights[index / column] ?: 0) + verticalSpacingPx
-                    row++
-                }
+                val column = index % columns
+                placeable.placeRelative(
+                    x = column * itemWidthWithHorizontalSpacing,
+                    y = columnY[column]
+                )
+                columnY[column] += placeable.height + verticalSpacingPx
             }
         }
     }
